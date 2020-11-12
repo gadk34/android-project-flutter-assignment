@@ -90,16 +90,9 @@ class UserRepository with ChangeNotifier {
     return Future.delayed(Duration.zero);
   }
 
-  WordPair _stringToWordPair(String s) {
-    //Assuming the string has 2 capital letters
-    final index = s.lastIndexOf(RegExp(r"[A-Z]"));
-    return WordPair(s.substring(0, index).toLowerCase(),
-        s.substring(index, s.length).toLowerCase());
-  }
-
-  Future<bool> syncSavedFavorites(Set saved) async {
+  Future syncSavedFavorites(Set saved) async {
     if (status == Status.Authenticated) {
-      await _db.collection('users').doc(_user.email).get().then((snapshot) async {
+      _db.collection('users').doc(_user.email).get().then((snapshot) async {
         var currFaves = Set.from(snapshot.data()['favorites']);
         currFaves.addAll(
             saved.map<String>((f) => f.asPascalCase.toString()).toList());
@@ -108,13 +101,12 @@ class UserRepository with ChangeNotifier {
             .doc(_user.email)
             .update({'favorites': currFaves.toList()});
       });
-      await _db.collection('users').doc(_user.email).get().then((snapshot) async {
+      _db.collection('users').doc(_user.email).get().then((snapshot) async {
         var currFaves = Set.from(snapshot.data()['favorites']);
-        saved = saved.union(currFaves.map<WordPair>((s) => _stringToWordPair(s)).toSet());
+        saved = saved.union(currFaves);
       });
-      return true;
+      notifyListeners();
     }
-    return false;
   }
 
   Future addFavorite(WordPair pair, Set<WordPair> saved) async {
@@ -192,38 +184,30 @@ class _RandomWordsState extends State<RandomWords> {
             title: Text('Startup Name Generator'),
             actions: userRep.status == Status.Authenticated
                 ? [
-              IconButton(
-                  icon: Icon(Icons.favorite),
-                  onPressed: () => _pushSaved()),
-              Builder(
-                builder: (context) =>
                     IconButton(
-                        icon: Icon(Icons.exit_to_app),
-                        onPressed: () {
-                          userRep.signOut();
-                          _saved.clear();
-                          Scaffold.of(context).showSnackBar(SnackBar(
-                              content: Text("Logged out successfully")));
-                        }),
-              ),
-            ]
+                        icon: Icon(Icons.favorite),
+                        onPressed: () => _pushSaved()),
+                    Builder(
+                      builder: (context) => IconButton(
+                          icon: Icon(Icons.exit_to_app),
+                          onPressed: () {
+                            userRep.signOut();
+                            _saved.clear();
+                            Scaffold.of(context).showSnackBar(SnackBar(
+                                content: Text("Logged out successfully")));
+                          }),
+                    ),
+                  ]
                 : [
-              IconButton(
-                  icon: Icon(Icons.favorite),
-                  onPressed: () => _pushSaved()),
-              IconButton(
-                  icon: Icon(Icons.login),
-                  onPressed: () => _pushLogin(userRep)),
-            ],
+                    IconButton(
+                        icon: Icon(Icons.favorite),
+                        onPressed: () => _pushSaved()),
+                    IconButton(
+                        icon: Icon(Icons.login),
+                        onPressed: () => _pushLogin(userRep)),
+                  ],
           ),
-          body: Builder(
-              builder: (context) {
-                setState(() async => await userRep.syncSavedFavorites(_saved));
-                return _buildSuggestions();
-                return Center(child: CircularProgressIndicator());
-              }
-          ),
-
+          body: _buildSuggestions(),
         );
       },
     );
@@ -296,7 +280,8 @@ class _RandomWordsState extends State<RandomWords> {
                                               _passwordCtrl.text);
                                           await userRep
                                               .syncSavedFavorites(_saved);
-                                          if (userRep.status == Status.Authenticated) {
+                                          if (userRep.status ==
+                                              Status.Authenticated) {
                                             Navigator.of(context).pop();
                                           }
                                         } on FirebaseAuthException catch (_) {
