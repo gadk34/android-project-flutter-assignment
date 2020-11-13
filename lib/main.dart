@@ -1,14 +1,32 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'package:provider/provider.dart';
+import 'package:snapping_sheet/snapping_sheet.dart';
+import 'user_repository.dart';
+
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(App());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<UserRepository>(
+      create: (_) => UserRepository.instance(),
+      child: MaterialApp(
+        title: 'Startup Name Generator',
+        theme: ThemeData(
+          primaryColor: Colors.red,
+        ),
+        home: RandomWords(),
+      ),
+    );
+  }
 }
 
 class App extends StatelessWidget {
@@ -38,133 +56,6 @@ class App extends StatelessWidget {
   }
 }
 
-enum Status { Uninitialized, Authenticated, Authenticating, Unauthenticated }
-
-class UserRepository with ChangeNotifier {
-  FirebaseAuth _auth;
-  User _user;
-  Status _status = Status.Uninitialized;
-  FirebaseFirestore _db;
-
-  UserRepository.instance() : _auth = FirebaseAuth.instance {
-    _auth.authStateChanges().listen(_authStateChanges);
-  }
-
-  Status get status => _status;
-
-  User get user => _user;
-
-  FirebaseAuth get auth => _auth;
-
-  FirebaseFirestore get firestore => _db;
-
-  Future<void> _addUser(DocumentReference userRef) async {
-    userRef.get().then((snapshot) {
-      if (!snapshot.exists) {
-        userRef.set({'email': _user.email, 'favorites': []});
-      }
-    });
-  }
-
-  Future<void> signIn(String email, String password) async {
-    try {
-      _status = Status.Authenticating;
-      notifyListeners();
-      await _auth.signInWithEmailAndPassword(email: email, password: password);
-      _status = Status.Authenticated;
-      _db = FirebaseFirestore.instance;
-      await _addUser(_db.collection('users').doc(_user.email));
-      notifyListeners();
-    } catch (e) {
-      _status = Status.Unauthenticated;
-      notifyListeners();
-      throw e;
-    }
-  }
-
-  Future signOut() async {
-    _status = Status.Unauthenticated;
-    _auth.signOut();
-    _db = null;
-    notifyListeners();
-    return Future.delayed(Duration.zero);
-  }
-
-  Future syncSavedFavorites(Set saved) async {
-    if (status == Status.Authenticated) {
-      _db.collection('users').doc(_user.email).get().then((snapshot) async {
-        var currFaves = Set.from(snapshot.data()['favorites']);
-        currFaves.addAll(
-            saved.map<String>((f) => f.asPascalCase.toString()).toList());
-        await _db
-            .collection('users')
-            .doc(_user.email)
-            .update({'favorites': currFaves.toList()});
-      });
-      _db.collection('users').doc(_user.email).get().then((snapshot) async {
-        var currFaves = Set.from(snapshot.data()['favorites']);
-        saved = saved.union(currFaves);
-      });
-      notifyListeners();
-    }
-  }
-
-  Future addFavorite(WordPair pair, Set<WordPair> saved) async {
-    saved.add(pair);
-    if (status == Status.Authenticated) {
-      _db.collection('users').doc(_user.email).get().then((snapshot) async {
-        var currFaves = snapshot.data()['favorites'];
-        currFaves.add(pair.asPascalCase.toString());
-        await _db
-            .collection('users')
-            .doc(_user.email)
-            .update({'favorites': currFaves.toList()});
-        notifyListeners();
-      });
-    }
-  }
-
-  Future removeFavorite(WordPair pair, Set saved) async {
-    saved.remove(pair);
-    if (status == Status.Authenticated) {
-      _db.collection('users').doc(_user.email).get().then((snapshot) async {
-        var currFaves = Set<String>.from(snapshot.data()['favorites']);
-        currFaves.remove(pair.asPascalCase.toString());
-        await _db
-            .collection('users')
-            .doc(_user.email)
-            .update({'favorites': currFaves.toList()});
-        notifyListeners();
-      });
-    }
-  }
-
-  Future<void> _authStateChanges(User firebaseUser) async {
-    if (firebaseUser == null) {
-      _status = Status.Unauthenticated;
-    } else {
-      _user = firebaseUser;
-      _status = Status.Authenticated;
-    }
-  }
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider<UserRepository>(
-      create: (_) => UserRepository.instance(),
-      child: MaterialApp(
-        title: 'Startup Name Generator',
-        theme: ThemeData(
-          primaryColor: Colors.red,
-        ),
-        home: RandomWords(),
-      ),
-    );
-  }
-}
-
 class RandomWords extends StatefulWidget {
   @override
   _RandomWordsState createState() => _RandomWordsState();
@@ -173,22 +64,24 @@ class RandomWords extends StatefulWidget {
 class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _saved = Set<WordPair>();
-  final _biggerFont = const TextStyle(fontSize: 18);
+  final _biggerFont = const TextStyle(color: Colors.black, fontSize: 18);
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserRepository>(
-      builder: (context, userRep, _) {
-        return Scaffold(
-          appBar: AppBar(
-            title: Text('Startup Name Generator'),
-            actions: userRep.status == Status.Authenticated
-                ? [
-                    IconButton(
-                        icon: Icon(Icons.favorite),
-                        onPressed: () => _pushSaved()),
-                    Builder(
-                      builder: (context) => IconButton(
+    return Material(
+      child: Consumer<UserRepository>(
+        builder: (context, userRep, _) {
+          var _list = Scaffold(
+            appBar: AppBar(
+              title: Text('Startup Name Generator'),
+              actions: userRep.status == Status.Authenticated
+                  ? [
+                IconButton(
+                    icon: Icon(Icons.favorite),
+                    onPressed: () => _pushSaved()),
+                Builder(
+                  builder: (context) =>
+                      IconButton(
                           icon: Icon(Icons.exit_to_app),
                           onPressed: () {
                             userRep.signOut();
@@ -196,20 +89,65 @@ class _RandomWordsState extends State<RandomWords> {
                             Scaffold.of(context).showSnackBar(SnackBar(
                                 content: Text("Logged out successfully")));
                           }),
+                ),
+              ]
+                  : [
+                IconButton(
+                    icon: Icon(Icons.favorite),
+                    onPressed: () => _pushSaved()),
+                IconButton(
+                    icon: Icon(Icons.login),
+                    onPressed: () => _pushLogin(userRep)),
+              ],
+            ),
+            body: _buildSuggestions(),
+          );
+          return SnappingSheet(
+              sheetBelow: SnappingSheetContent(
+                // child: Container(child: Text("Welcome back, ${userRep.user.email}!")),
+                  child: Container(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.yellowAccent,
+                              // child: Center(child: Text("${userRep.user.email[0].toUpperCase()}"))
+                              child: Center(child: Text("U")),
+                              radius: 40.0,
+                            ),
+                          Column(
+                            children: [
+                              // Text("${userRep.user.email}"),
+                              Text("User", style: _biggerFont),
+                              ElevatedButton(
+                                  onPressed: () {},
+                                  child: Center(
+                                      child: Text("Change avatar"))
+                              )
+                            ],
+                          ),
+                        ]
                     ),
-                  ]
-                : [
-                    IconButton(
-                        icon: Icon(Icons.favorite),
-                        onPressed: () => _pushSaved()),
-                    IconButton(
-                        icon: Icon(Icons.login),
-                        onPressed: () => _pushLogin(userRep)),
-                  ],
-          ),
-          body: _buildSuggestions(),
-        );
-      },
+                    padding: EdgeInsets.all(2)
+                  ),
+                  draggable: true,
+                  heightBehavior: SnappingSheetHeight.fit()
+              ),
+              grabbing: Container(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Welcome back, user!", style: _biggerFont),
+                      Icon(Icons.keyboard_arrow_up),
+                    ],
+                  ),
+                  color: Colors.grey,
+                padding: EdgeInsets.all(10),
+              ),
+              child: _list
+          );
+        },
+      ),
     );
   }
 
