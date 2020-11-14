@@ -140,7 +140,7 @@ class UserRepository with ChangeNotifier {
 
     await _picker.getImage(source: ImageSource.gallery).then((image) async {
       await _storage.ref().child("images/${_user.email}_avatar").putFile(File(image.path));
-      _avatarURL = await _storage.ref().child("images/${_user.email}_avatar").getDownloadURL();
+      _avatarURL = await _storage.ref().child("images/${_user.email}_avatar").getDownloadURL();;
     });
     notifyListeners();
   }
