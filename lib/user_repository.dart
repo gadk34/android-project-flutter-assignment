@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,18 +12,17 @@ class UserRepository with ChangeNotifier {
   User _user;
   Status _status = Status.Uninitialized;
   FirebaseFirestore _db;
+  File _avatar;
 
   UserRepository.instance() : _auth = FirebaseAuth.instance {
     _auth.authStateChanges().listen(_authStateChanges);
   }
 
   Status get status => _status;
-
   User get user => _user;
-
   FirebaseAuth get auth => _auth;
-
   FirebaseFirestore get firestore => _db;
+  File get avatar => _avatar;
 
   Future<void> _addUser(DocumentReference userRef) async {
     userRef.get().then((snapshot) {
@@ -52,9 +52,6 @@ class UserRepository with ChangeNotifier {
     try {
       _status = Status.Authenticating;
       notifyListeners();
-      if(password.compareTo(passwordValidate) != 0){
-        throw FirebaseAuthException(message: "Passwords must match");
-      }
       await _auth.createUserWithEmailAndPassword(email: email, password: password);
       _status = Status.Authenticated;
       _db = FirebaseFirestore.instance;
