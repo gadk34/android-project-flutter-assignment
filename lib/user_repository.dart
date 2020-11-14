@@ -1,9 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
 import 'package:english_words/english_words.dart';
 
 enum Status { Uninitialized, Authenticated, Authenticating, Unauthenticated }
@@ -50,6 +48,24 @@ class UserRepository with ChangeNotifier {
     }
   }
 
+  Future signUp(String email, String password, String passwordValidate) async {
+    try {
+      _status = Status.Authenticating;
+      notifyListeners();
+      if(password.compareTo(passwordValidate) != 0){
+        throw FirebaseAuthException(message: "Passwords must match");
+      }
+      await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      _status = Status.Authenticated;
+      _db = FirebaseFirestore.instance;
+      await _addUser(_db.collection('users').doc(_user.email));
+      notifyListeners();
+    } catch (e) {
+      _status = Status.Unauthenticated;
+      notifyListeners();
+      throw e;
+    }
+  }
   Future signOut() async {
     _status = Status.Unauthenticated;
     _auth.signOut();
