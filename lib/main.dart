@@ -99,12 +99,13 @@ class _RandomWordsState extends State<RandomWords> {
               ? SnappingSheet(
             sheetBelow: SnappingSheetContent(
                 child: Container(
+                  alignment: Alignment.topCenter,
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                     CircleAvatar(
                       backgroundColor: Colors.transparent,
-                      backgroundImage: userRep.avatar == null ? null : FileImage(userRep.avatar),
-                      child: userRep.avatar == null ? Center(child: Text(
-                          "${userRep.user.email[0].toUpperCase()}", style: TextStyle(color: Colors.black, fontSize: 40))) : null,
+                      backgroundImage: userRep.avatarURL== null ? null : NetworkImage(userRep.avatarURL),
+                      child: userRep.avatarURL== null ? Center(child: Text(
+                          "${userRep.user.email[0].toUpperCase()}", style: TextStyle(color: Colors.black, fontSize: 50, fontWeight: FontWeight.bold))) : null,
                       radius: MediaQuery
                           .of(context)
                           .size
@@ -150,14 +151,17 @@ class _RandomWordsState extends State<RandomWords> {
                 .height * 0.075,
             child: _list,
             snapPositions: [
-              SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
+              SnapPosition(
+                  positionPixel: 0.0,
+                  snappingCurve: Curves.elasticOut,
+                  snappingDuration: Duration(milliseconds: 750)),
               SnapPosition(
                   positionPixel: MediaQuery
                       .of(context)
                       .size
                       .height * 0.14,
-                  snappingCurve: Curves.ease,
-                  snappingDuration: Duration(milliseconds: 500)),
+                  snappingCurve: Curves.elasticOut,
+                  snappingDuration: Duration(milliseconds: 750)),
             ],
             initSnapPosition: SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
           )

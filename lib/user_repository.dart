@@ -15,7 +15,7 @@ class UserRepository with ChangeNotifier {
   Status _status = Status.Uninitialized;
   FirebaseFirestore _db;
   FirebaseStorage _storage;
-  File _avatar;
+  String _avatarURL;
 
   UserRepository.instance() : _auth = FirebaseAuth.instance {
     _auth.authStateChanges().listen(_authStateChanges);
@@ -26,7 +26,7 @@ class UserRepository with ChangeNotifier {
   FirebaseAuth get auth => _auth;
   FirebaseFirestore get firestore => _db;
   FirebaseStorage get storage => _storage;
-  File get avatar => _avatar;
+  String get avatarURL => _avatarURL;
 
   Future<void> _addUser(DocumentReference userRef) async {
     userRef.get().then((snapshot) {
@@ -44,7 +44,7 @@ class UserRepository with ChangeNotifier {
       _status = Status.Authenticated;
       _db = FirebaseFirestore.instance;
       _storage = FirebaseStorage.instance;
-      // await _storage.ref().child("images/${_user.email}_avatar").;
+      _avatarURL = await _storage.ref().child("images/${_user.email}_avatar").getDownloadURL();
       await _addUser(_db.collection('users').doc(_user.email));
       notifyListeners();
     } catch (e) {
@@ -138,10 +138,10 @@ class UserRepository with ChangeNotifier {
   Future addAvatar() async {
     final _picker = ImagePicker();
 
-    await _picker.getImage(source: ImageSource.gallery).then((image) {
-      _avatar = File(image.path);
+    await _picker.getImage(source: ImageSource.gallery).then((image) async {
+      await _storage.ref().child("images/${_user.email}_avatar").putFile(File(image.path));
+      _avatarURL = await _storage.ref().child("images/${_user.email}_avatar").getDownloadURL();
     });
-    await _storage.ref().child("images/${_user.email}_avatar").putFile(_avatar);
-
+    notifyListeners();
   }
 }
