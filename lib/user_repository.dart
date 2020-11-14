@@ -3,7 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:english_words/english_words.dart';
+import 'package:image_picker/image_picker.dart';
 
 enum Status { Uninitialized, Authenticated, Authenticating, Unauthenticated }
 
@@ -12,6 +14,7 @@ class UserRepository with ChangeNotifier {
   User _user;
   Status _status = Status.Uninitialized;
   FirebaseFirestore _db;
+  FirebaseStorage _storage;
   File _avatar;
 
   UserRepository.instance() : _auth = FirebaseAuth.instance {
@@ -22,6 +25,7 @@ class UserRepository with ChangeNotifier {
   User get user => _user;
   FirebaseAuth get auth => _auth;
   FirebaseFirestore get firestore => _db;
+  FirebaseStorage get storage => _storage;
   File get avatar => _avatar;
 
   Future<void> _addUser(DocumentReference userRef) async {
@@ -39,6 +43,8 @@ class UserRepository with ChangeNotifier {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
       _status = Status.Authenticated;
       _db = FirebaseFirestore.instance;
+      _storage = FirebaseStorage.instance;
+      // await _storage.ref().child("images/${_user.email}_avatar").;
       await _addUser(_db.collection('users').doc(_user.email));
       notifyListeners();
     } catch (e) {
@@ -127,5 +133,15 @@ class UserRepository with ChangeNotifier {
       _user = firebaseUser;
       _status = Status.Authenticated;
     }
+  }
+
+  Future addAvatar() async {
+    final _picker = ImagePicker();
+
+    await _picker.getImage(source: ImageSource.gallery).then((image) {
+      _avatar = File(image.path);
+    });
+    await _storage.ref().child("images/${_user.email}_avatar").putFile(_avatar);
+
   }
 }

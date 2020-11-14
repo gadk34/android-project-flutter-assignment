@@ -6,7 +6,6 @@ import 'package:english_words/english_words.dart';
 import 'package:provider/provider.dart';
 import 'package:snapping_sheet/snapping_sheet.dart';
 import 'user_repository.dart';
-import 'package:image_picker/image_picker.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -65,7 +64,6 @@ class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _saved = Set<WordPair>();
   final _biggerFont = const TextStyle(color: Colors.black, fontSize: 18);
-  final _picker = ImagePicker();
 
   @override
   Widget build(BuildContext context) {
@@ -77,81 +75,92 @@ class _RandomWordsState extends State<RandomWords> {
               title: Text('Startup Name Generator'),
               actions: userRep.status == Status.Authenticated
                   ? [
-                      IconButton(icon: Icon(Icons.favorite), onPressed: () => _pushSaved()),
-                      Builder(
-                        builder: (context) => IconButton(
-                            icon: Icon(Icons.exit_to_app),
-                            onPressed: () {
-                              userRep.signOut();
-                              _saved.clear();
-                              Scaffold.of(context).showSnackBar(SnackBar(content: Text("Logged out successfully")));
-                            }),
-                      ),
-                    ]
+                IconButton(icon: Icon(Icons.favorite), onPressed: () => _pushSaved()),
+                Builder(
+                  builder: (context) =>
+                      IconButton(
+                          icon: Icon(Icons.exit_to_app),
+                          onPressed: () {
+                            userRep.signOut();
+                            _saved.clear();
+                            Scaffold.of(context).showSnackBar(SnackBar(content: Text("Logged out successfully")));
+                          }),
+                ),
+              ]
                   : [
-                      IconButton(icon: Icon(Icons.favorite), onPressed: () => _pushSaved()),
-                      IconButton(icon: Icon(Icons.login), onPressed: () => _pushLogin()),
-                    ],
+                IconButton(icon: Icon(Icons.favorite), onPressed: () => _pushSaved()),
+                IconButton(icon: Icon(Icons.login), onPressed: () => _pushLogin()),
+              ],
             ),
             body: _buildSuggestions(),
           );
           var _snapCtrl = SnappingSheetController();
           return userRep.status == Status.Authenticated
               ? SnappingSheet(
-                  sheetBelow: SnappingSheetContent(
-                      // child: Container(child: Text("Welcome back, ${userRep.user.email}!")),
-                      child: Container(
-                        child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.yellowAccent,
-                            child: Center(child: Text("${userRep.user.email[0].toUpperCase()}", style: TextStyle(color: Colors.black, fontSize: 40))),
-                            // child: Center(child: Text("U")),
-                            radius: MediaQuery.of(context).size.height * 0.06,
-                          ),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text("${userRep.user.email}", style: _biggerFont),
-                                // Text("User", style: _biggerFont),
-                                RaisedButton(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                                    color: Colors.red,
-                                    onPressed: () {},
-                                    child: Center(child: Text("Change avatar", style: TextStyle(color: Colors.white))))
-                              ],
-                            ),
-                          ),
-                        ]),
-                        padding: EdgeInsets.all(2),
-                        color: Colors.white,
-                      ),
-                      draggable: true,
-                      heightBehavior: SnappingSheetHeight.fit()),
-                  snappingSheetController: _snapCtrl,
-                  grabbing: Container(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Welcome back, ${userRep.user.email}!", style: _biggerFont),
-                        Icon(false ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up),
-                      ],
+            sheetBelow: SnappingSheetContent(
+                child: Container(
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.transparent,
+                      backgroundImage: userRep.avatar == null ? null : FileImage(userRep.avatar),
+                      child: userRep.avatar == null ? Center(child: Text(
+                          "${userRep.user.email[0].toUpperCase()}", style: TextStyle(color: Colors.black, fontSize: 40))) : null,
+                      radius: MediaQuery
+                          .of(context)
+                          .size
+                          .height * 0.06,
                     ),
-                    color: Colors.grey,
-                    padding: EdgeInsets.all(10),
-                  ),
-                  grabbingHeight: MediaQuery.of(context).size.height * 0.075,
-                  child: _list,
-                  snapPositions: [
-                    SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
-                    SnapPosition(
-                        positionPixel: MediaQuery.of(context).size.height * 0.14,
-                        snappingCurve: Curves.ease,
-                        snappingDuration: Duration(milliseconds: 500)),
-                  ],
-                  initSnapPosition: SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
-                )
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text("${userRep.user.email}", style: _biggerFont),
+                          RaisedButton(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
+                              color: Colors.teal,
+                              onPressed: () {
+                                userRep.addAvatar();
+                              },
+                              child: Center(child: Text("Change avatar", style: TextStyle(color: Colors.white))))
+                        ],
+                      ),
+                    ),
+                  ]),
+                  padding: EdgeInsets.all(2),
+                  color: Colors.white,
+                ),
+                draggable: true,
+                heightBehavior: SnappingSheetHeight.fit()),
+            snappingSheetController: _snapCtrl,
+            grabbing: Container(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Welcome back, ${userRep.user.email}!", style: _biggerFont),
+                  Icon(false ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up),
+                ],
+              ),
+              color: Colors.grey,
+              padding: EdgeInsets.all(10),
+            ),
+            grabbingHeight: MediaQuery
+                .of(context)
+                .size
+                .height * 0.075,
+            child: _list,
+            snapPositions: [
+              SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
+              SnapPosition(
+                  positionPixel: MediaQuery
+                      .of(context)
+                      .size
+                      .height * 0.14,
+                  snappingCurve: Curves.ease,
+                  snappingDuration: Duration(milliseconds: 500)),
+            ],
+            initSnapPosition: SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
+          )
               : _list;
         },
       ),
@@ -217,9 +226,6 @@ class _RandomWordsState extends State<RandomWords> {
                                 try {
                                   await userRep.signIn(_emailCtrl.text, _passwordCtrl.text);
                                   await userRep.syncSavedFavorites(_saved);
-                                  // if (userRep.status == Status.Authenticated) {
-                                  //   Navigator.of(context).pop();
-                                  // }
                                 } on FirebaseAuthException catch (_) {
                                   Scaffold.of(context).showSnackBar(
                                     SnackBar(
@@ -259,6 +265,9 @@ class _RandomWordsState extends State<RandomWords> {
                           color: Colors.teal,
                           onPressed: () {
                             if (_passwordCtrl.text.isNotEmpty && _emailCtrl.text.isNotEmpty) {
+                              /** TODO: Add onTap actions to open/close the bottom sheet
+                               * TODO: Also try the bonus - blur the background based on the bottom sheet's height (use the controller)
+                               */
                               showModalBottomSheet(
                                   isScrollControlled: true,
                                   context: context,
@@ -294,14 +303,11 @@ class _RandomWordsState extends State<RandomWords> {
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
                                               color: Colors.teal,
                                               onPressed: () async {
-                                                try {
+                                                try { // TODO: add error text to TextField when passwords don't match
                                                   if(_passConfirmCtrl.text.isNotEmpty && _passConfirmCtrl.text.compareTo(_passwordCtrl.text) == 0) {
                                                     Navigator.of(context).pop(); //pops the modal bottom sheet;
                                                     await userRep.signUp(_emailCtrl.text, _passwordCtrl.text, _passConfirmCtrl.text);
                                                     await userRep.syncSavedFavorites(_saved);
-                                                    // if (userRep.status == Status.Authenticated) {
-                                                    //   Navigator.of(context).pop();
-                                                    // }
                                                   }
                                                 } on FirebaseAuthException catch (_) {
                                                   Scaffold.of(context).showSnackBar(
@@ -418,14 +424,6 @@ class _RandomWordsState extends State<RandomWords> {
             }
             setState(() {});
           });
-    });
-  }
-
-  Future chooseFile() async {
-    await _picker.getImage(source: ImageSource.gallery).then((image) {
-      setState(() {
-        // _image = image;
-      });
     });
   }
 }
