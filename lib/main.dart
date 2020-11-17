@@ -68,10 +68,13 @@ class _RandomWordsState extends State<RandomWords> {
 
   @override
   Widget build(BuildContext context) {
+    final _scaffoldKey = GlobalKey<ScaffoldState>();
+
     return Material(
       child: Consumer<UserRepository>(
         builder: (context, userRep, _) {
           var _list = Scaffold(
+            key: _scaffoldKey,
             appBar: AppBar(
               title: Text('Startup Name Generator'),
               actions: userRep.status == Status.Authenticated
@@ -84,7 +87,10 @@ class _RandomWordsState extends State<RandomWords> {
                           onPressed: () {
                             userRep.signOut();
                             _saved.clear();
-                            Scaffold.of(context).showSnackBar(SnackBar(content: Text("Logged out successfully")));
+                            Scaffold.of(context).showSnackBar(SnackBar(
+                              content: Text("Logged out successfully"),
+                              behavior: SnackBarBehavior.floating,
+                            ));
                           }),
                 ),
               ]
@@ -112,85 +118,91 @@ class _RandomWordsState extends State<RandomWords> {
           return userRep.status == Status.Authenticated
               ? SnappingSheet(
             sheetBelow: SnappingSheetContent(
-                child: Container(
-                  alignment: Alignment.topCenter,
-                  padding: EdgeInsets.all(2),
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.transparent,
-                            backgroundImage: userRep.avatarURL == null
-                                ? null
-                                : NetworkImage(userRep.avatarURL),
-                            child: userRep.avatarURL == null ? Center(child: Text(
-                                "${userRep.user.email[0].toUpperCase()}",
-                                style: TextStyle(color: Colors.black,
-                                    fontSize: 50,
-                                    fontWeight: FontWeight.bold))) : null,
-                            radius: MediaQuery
-                                .of(context)
-                                .size
-                                .height * 0.06,
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: SingleChildScrollView(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text("${userRep.user.email}", style: _biggerFont),
-                                  RaisedButton(
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                              18.0)),
-                                      color: Colors.teal,
-                                      onPressed: () async {
-                                        try{
-                                          await userRep.addAvatar();
-                                        } on NoSuchMethodError catch (_) {
-                                          // Here I would use my Scaffold to show a snack bar... IF I HAD ONE :X
-                                        }
-                                      },
-                                      child: Center(child: Text("Change avatar",
-                                          style: TextStyle(color: Colors.white))))
-                                ],
+                  child: Container(
+                    alignment: Alignment.topCenter,
+                    padding: EdgeInsets.all(2),
+                    color: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.transparent,
+                              backgroundImage: userRep.avatarURL == null
+                                  ? null
+                                  : NetworkImage(userRep.avatarURL),
+                              child: userRep.avatarURL == null ? Center(child: Text(
+                                  "${userRep.user.email[0].toUpperCase()}",
+                                  style: TextStyle(color: Colors.black,
+                                      fontSize: 50,
+                                      fontWeight: FontWeight.bold))) : null,
+                              radius: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height * 0.06,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text("${userRep.user.email}", style: _biggerFont),
+                                    RaisedButton(
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                                18.0)),
+                                        color: Colors.teal,
+                                        onPressed: () async {
+                                          try {
+                                            await userRep.addAvatar();
+                                          } on NoSuchMethodError catch (_) {
+                                            _scaffoldKey.currentState.showSnackBar(SnackBar(
+                                              content: Container(
+                                                  height: _snapCtrl.currentSnapPosition.positionPixel + 60,
+                                                  child: Text("No image selected")),
+                                              behavior: SnackBarBehavior.floating,
+                                              elevation: null,
+                                            ));
+                                          }
+                                        },
+                                        child: Center(child: Text("Change avatar",
+                                            style: TextStyle(color: Colors.white))))
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ]),
+                          ]),
+                    ),
                   ),
-                ),
-                draggable: true,
-                heightBehavior: SnappingSheetHeight.fit()),
+                  draggable: true,
+                  heightBehavior: SnappingSheetHeight.fit()),
             snappingSheetController: _snapCtrl,
             grabbing: InkWell(
-              onTap: () {
-                setState(() {
-                  _snapCtrl.snapToPosition(_snapPosis[_snapCtrl.currentSnapPosition == _snapPosis[1] ? 0 : 1]);
-                });
+                onTap: () {
+                  setState(() {
+                    _snapCtrl.snapToPosition(_snapPosis[_snapCtrl.currentSnapPosition == _snapPosis[1] ? 0 : 1]);
+                  });
                 },
-              child: Container(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("Welcome back, ${userRep.user.email}!",
-                        style: _biggerFont),
-                    Icon(Icons.keyboard_arrow_up),
-                  ],
+                child: Container(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Welcome back, ${userRep.user.email}!",
+                          style: _biggerFont),
+                      Icon(Icons.keyboard_arrow_up),
+                    ],
+                  ),
+                  color: Colors.grey,
+                  padding: EdgeInsets.all(10),
                 ),
-                color: Colors.grey,
-                padding: EdgeInsets.all(10),
-              ),
 
             ),
             grabbingHeight: MediaQuery
-                .of(context)
-                .size
-                .height * 0.075,
+                  .of(context)
+                  .size
+                  .height * 0.075,
             child: _list,
             snapPositions: _snapPosis,
             initSnapPosition: _snapPosis[0],
@@ -271,6 +283,7 @@ class _RandomWordsState extends State<RandomWords> {
                                         SnackBar(
                                           content: Text(
                                               "There was an error logging into the app"),
+                                          behavior: SnackBarBehavior.floating,
                                         ),
                                       );
                                     }
@@ -296,10 +309,12 @@ class _RandomWordsState extends State<RandomWords> {
                                     color: Colors.red,
                                     onPressed: () {
                                       userRep.signOut();
-                                      setState(() =>_saved.clear());
+                                      setState(() => _saved.clear());
                                       Scaffold.of(context).showSnackBar(
                                           SnackBar(content: Text(
-                                              "Logged out successfully")));
+                                              "Logged out successfully"),
+                                            behavior: SnackBarBehavior.floating,
+                                          ));
                                     },
                                     child: Text("sign out"),
                                   )
@@ -325,66 +340,68 @@ class _RandomWordsState extends State<RandomWords> {
                                             final _passConfirmCtrl = TextEditingController();
                                             var _passwordValid = true;
                                             return Padding(
-                                              padding: MediaQuery.of(context).viewInsets,
+                                              padding: MediaQuery
+                                                  .of(context)
+                                                  .viewInsets,
                                               child: StatefulBuilder(
-                                                builder: (context, setState) => Container(
-                                                  // height: _screenBottom +
-                                                  //     _screenHeight * 0.2,
-                                                  child: Column(
-                                                    mainAxisAlignment: MainAxisAlignment
-                                                        .start,
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    crossAxisAlignment: CrossAxisAlignment
-                                                        .center,
-                                                    children: [
-                                                      Text(
-                                                          "Please confirm your password below:",
-                                                          style: _biggerFont),
-                                                      TextField(
-                                                        controller: _passConfirmCtrl,
-                                                        autofocus: true,
-                                                        style: _biggerFont,
-                                                        decoration: InputDecoration(
-                                                            hintText: 'Confirm password',
-                                                            icon: Icon(Icons
-                                                                .vpn_key_outlined),
-                                                            errorText: _passwordValid ? null : "Passwords must match",
-                                                        ),
-                                                        obscureText: true,
-                                                        onTap: () => setState(() => _passwordValid = true),
+                                                builder: (context, setState) =>
+                                                    Container(
+                                                      child: Column(
+                                                        mainAxisAlignment: MainAxisAlignment
+                                                            .start,
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        crossAxisAlignment: CrossAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                              "Please confirm your password below:",
+                                                              style: _biggerFont),
+                                                          TextField(
+                                                            controller: _passConfirmCtrl,
+                                                            autofocus: true,
+                                                            style: _biggerFont,
+                                                            decoration: InputDecoration(
+                                                              hintText: 'Confirm password',
+                                                              icon: Icon(Icons
+                                                                  .vpn_key_outlined),
+                                                              errorText: _passwordValid ? null : "Passwords must match",
+                                                            ),
+                                                            obscureText: true,
+                                                            onTap: () => setState(() => _passwordValid = true),
+                                                          ),
+                                                          RaisedButton(
+                                                              shape: RoundedRectangleBorder(
+                                                                  borderRadius: BorderRadius
+                                                                      .circular(18.0)),
+                                                              color: Colors.teal,
+                                                              onPressed: () async {
+                                                                try {
+                                                                  if (_passConfirmCtrl.text.isNotEmpty && _passConfirmCtrl.text.compareTo(_passwordCtrl.text) == 0) {
+                                                                    await userRep.signUp(_emailCtrl.text, _passwordCtrl.text, _passConfirmCtrl.text);
+                                                                    setState(() => _passwordValid = true);
+                                                                    await userRep.syncSavedFavorites(_saved);
+                                                                    Navigator.of(context).pop(); //pops the modal bottom sheet;
+                                                                  } else {
+                                                                    setState(() => _passwordValid = false);
+                                                                  }
+                                                                } on FirebaseAuthException catch (_) {
+                                                                  Scaffold.of(context).showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Text(
+                                                                          "There was an error logging into the app"),
+                                                                      behavior: SnackBarBehavior.floating,
+                                                                    ),
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Text("Confirm",
+                                                                  style: TextStyle(
+                                                                      color: Colors
+                                                                          .white,
+                                                                      fontSize: 18)))
+                                                        ],
                                                       ),
-                                                      RaisedButton(
-                                                          shape: RoundedRectangleBorder(
-                                                              borderRadius: BorderRadius
-                                                                  .circular(18.0)),
-                                                          color: Colors.teal,
-                                                          onPressed: () async {
-                                                            try {
-                                                              if (_passConfirmCtrl.text.isNotEmpty && _passConfirmCtrl.text.compareTo(_passwordCtrl.text) == 0) {
-                                                                await userRep.signUp(_emailCtrl.text, _passwordCtrl.text, _passConfirmCtrl.text);
-                                                                setState(() => _passwordValid = true);
-                                                                await userRep.syncSavedFavorites(_saved);
-                                                                Navigator.of(context).pop(); //pops the modal bottom sheet;
-                                                              } else {
-                                                                setState(() => _passwordValid = false);
-                                                              }
-                                                            } on FirebaseAuthException catch (_) {
-                                                              Scaffold.of(context).showSnackBar(
-                                                                SnackBar(
-                                                                  content: Text(
-                                                                      "There was an error logging into the app"),
-                                                                ),
-                                                              );
-                                                            }
-                                                          },
-                                                          child: Text("Confirm",
-                                                              style: TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 18)))
-                                                    ],
-                                                  ),
-                                                ),
+                                                    ),
                                               ),
                                             );
                                           });
