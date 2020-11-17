@@ -114,10 +114,13 @@ class _RandomWordsState extends State<RandomWords> {
             sheetBelow: SnappingSheetContent(
                 child: Container(
                   alignment: Alignment.topCenter,
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: CircleAvatar(
+                  padding: EdgeInsets.all(2),
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          CircleAvatar(
                             backgroundColor: Colors.transparent,
                             backgroundImage: userRep.avatarURL == null
                                 ? null
@@ -132,30 +135,39 @@ class _RandomWordsState extends State<RandomWords> {
                                 .size
                                 .height * 0.06,
                           ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Text("${userRep.user.email}", style: _biggerFont),
-                              RaisedButton(
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                          18.0)),
-                                  color: Colors.teal,
-                                  onPressed: () {
-                                    userRep.addAvatar();
-                                  },
-                                  child: Center(child: Text("Change avatar",
-                                      style: TextStyle(color: Colors.white))))
-                            ],
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text("${userRep.user.email}", style: _biggerFont),
+                                  RaisedButton(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              18.0)),
+                                      color: Colors.teal,
+                                      onPressed: () async {
+                                        try{
+                                          await userRep.addAvatar();
+                                        } on NoSuchMethodError catch (_) {
+                                          _list.showSnackBar(
+                                              SnackBar(
+                                                content: Text("No image selected"),
+                                                elevation: MediaQuery.of(context).viewInsets.bottom,
+                                              )
+                                          );
+                                        }
+                                      },
+                                      child: Center(child: Text("Change avatar",
+                                          style: TextStyle(color: Colors.white))))
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ]),
-                  padding: EdgeInsets.all(2),
-                  color: Colors.white,
+                        ]),
+                  ),
                 ),
                 draggable: true,
                 heightBehavior: SnappingSheetHeight.fit()),
@@ -269,7 +281,7 @@ class _RandomWordsState extends State<RandomWords> {
                                     }
                                   },
                                   child: Text(
-                                    'Submit',
+                                    'Log in',
                                     style: TextStyle(
                                         color: Colors.white, fontSize: 18),
                                   ),

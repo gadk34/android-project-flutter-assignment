@@ -157,12 +157,10 @@ class UserRepository with ChangeNotifier {
   Future addAvatar() async {
     final _picker = ImagePicker();
 
-    try {
-      await _picker.getImage(source: ImageSource.gallery).then((image) async {
-        await _storage.ref().child("users/${_user.email}/images/avatar").putFile(File(image.path));
-        _avatarURL = await _storage.ref().child("users/${_user.email}/images/avatar").getDownloadURL();
-      });
-    } on NoSuchMethodError catch (_) {}
+    await _picker.getImage(source: ImageSource.gallery).then((image) async {
+      await _storage.ref().child("users/${_user.email}/images/avatar").putFile(File(image.path));
+      _avatarURL = await _storage.ref().child("users/${_user.email}/images/avatar").getDownloadURL();
+    });
     notifyListeners();
   }
 }
