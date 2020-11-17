@@ -152,12 +152,7 @@ class _RandomWordsState extends State<RandomWords> {
                                         try{
                                           await userRep.addAvatar();
                                         } on NoSuchMethodError catch (_) {
-                                          _list.showSnackBar(
-                                              SnackBar(
-                                                content: Text("No image selected"),
-                                                elevation: MediaQuery.of(context).viewInsets.bottom,
-                                              )
-                                          );
+                                          // Here I would use my Scaffold to show a snack bar... IF I HAD ONE :X
                                         }
                                       },
                                       child: Center(child: Text("Change avatar",
