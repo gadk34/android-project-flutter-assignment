@@ -22,10 +22,15 @@ class UserRepository with ChangeNotifier {
   }
 
   Status get status => _status;
+
   User get user => _user;
+
   FirebaseAuth get auth => _auth;
+
   FirebaseFirestore get firestore => _db;
+
   FirebaseStorage get storage => _storage;
+
   String get avatarURL => _avatarURL;
 
   Future<void> _addUser(DocumentReference userRef) async {
@@ -44,7 +49,12 @@ class UserRepository with ChangeNotifier {
       _status = Status.Authenticated;
       _db = FirebaseFirestore.instance;
       _storage = FirebaseStorage.instance;
-      _avatarURL = await _storage.ref().child("images/${_user.email}_avatar").getDownloadURL();
+      try {
+        _avatarURL = await _storage.ref().child("users/${_user.email}/images/avatar").getDownloadURL();
+      }
+      on FirebaseException catch (_) { // in case the user hasn't yet uploaded an avatar
+        _avatarURL = null;
+      }
       await _addUser(_db.collection('users').doc(_user.email));
       notifyListeners();
     } catch (e) {
@@ -62,6 +72,13 @@ class UserRepository with ChangeNotifier {
       _status = Status.Authenticated;
       _db = FirebaseFirestore.instance;
       await _addUser(_db.collection('users').doc(_user.email));
+      _storage = FirebaseStorage.instance;
+      try {
+        _avatarURL = await _storage.ref().child("users/${_user.email}/images/avatar").getDownloadURL();
+      }
+      on FirebaseException catch (_) { // in case the user hasn't yet uploaded an avatar
+        _avatarURL = null;
+      }
       notifyListeners();
     } catch (e) {
       _status = Status.Unauthenticated;
@@ -69,10 +86,12 @@ class UserRepository with ChangeNotifier {
       throw e;
     }
   }
+
   Future signOut() async {
     _status = Status.Unauthenticated;
     _auth.signOut();
     _db = null;
+    _avatarURL = null;
     notifyListeners();
     return Future.delayed(Duration.zero);
   }
@@ -138,10 +157,12 @@ class UserRepository with ChangeNotifier {
   Future addAvatar() async {
     final _picker = ImagePicker();
 
-    await _picker.getImage(source: ImageSource.gallery).then((image) async {
-      await _storage.ref().child("images/${_user.email}_avatar").putFile(File(image.path));
-      _avatarURL = await _storage.ref().child("images/${_user.email}_avatar").getDownloadURL();;
-    });
+    try {
+      await _picker.getImage(source: ImageSource.gallery).then((image) async {
+        await _storage.ref().child("users/${_user.email}/images/avatar").putFile(File(image.path));
+        _avatarURL = await _storage.ref().child("users/${_user.email}/images/avatar").getDownloadURL();
+      });
+    } on NoSuchMethodError catch (_) {}
     notifyListeners();
   }
 }
