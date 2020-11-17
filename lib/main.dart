@@ -40,9 +40,9 @@ class App extends StatelessWidget {
           return Scaffold(
               body: Center(
                   child: Text(
-            snapshot.error.toString(),
-            textDirection: TextDirection.ltr,
-          )));
+                    snapshot.error.toString(),
+                    textDirection: TextDirection.ltr,
+                  )));
         }
 
         if (snapshot.connectionState == ConnectionState.done) {
@@ -64,6 +64,7 @@ class _RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
   final _saved = Set<WordPair>();
   final _biggerFont = const TextStyle(color: Colors.black, fontSize: 18);
+  SnappingSheetController _snapCtrl = SnappingSheetController();
 
   @override
   Widget build(BuildContext context) {
@@ -92,78 +93,100 @@ class _RandomWordsState extends State<RandomWords> {
                 IconButton(icon: Icon(Icons.login), onPressed: () => _pushLogin()),
               ],
             ),
+            resizeToAvoidBottomInset: true,
             body: _buildSuggestions(),
           );
-          var _snapCtrl = SnappingSheetController();
+          final _snapPosis = [
+            SnapPosition(
+                positionPixel: 0.0,
+                snappingCurve: Curves.elasticOut,
+                snappingDuration: Duration(milliseconds: 750)),
+            SnapPosition(
+                positionPixel: MediaQuery
+                    .of(context)
+                    .size
+                    .height * 0.14,
+                snappingCurve: Curves.elasticOut,
+                snappingDuration: Duration(milliseconds: 750)),
+          ];
           return userRep.status == Status.Authenticated
               ? SnappingSheet(
             sheetBelow: SnappingSheetContent(
                 child: Container(
                   alignment: Alignment.topCenter,
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.transparent,
-                      backgroundImage: userRep.avatarURL== null ? null : NetworkImage(userRep.avatarURL),
-                      child: userRep.avatarURL== null ? Center(child: Text(
-                          "${userRep.user.email[0].toUpperCase()}", style: TextStyle(color: Colors.black, fontSize: 50, fontWeight: FontWeight.bold))) : null,
-                      radius: MediaQuery
-                          .of(context)
-                          .size
-                          .height * 0.06,
-                    ),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text("${userRep.user.email}", style: _biggerFont),
-                          RaisedButton(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                              color: Colors.teal,
-                              onPressed: () {
-                                userRep.addAvatar();
-                              },
-                              child: Center(child: Text("Change avatar", style: TextStyle(color: Colors.white))))
-                        ],
-                      ),
-                    ),
-                  ]),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: CircleAvatar(
+                            backgroundColor: Colors.transparent,
+                            backgroundImage: userRep.avatarURL == null
+                                ? null
+                                : NetworkImage(userRep.avatarURL),
+                            child: userRep.avatarURL == null ? Center(child: Text(
+                                "${userRep.user.email[0].toUpperCase()}",
+                                style: TextStyle(color: Colors.black,
+                                    fontSize: 50,
+                                    fontWeight: FontWeight.bold))) : null,
+                            radius: MediaQuery
+                                .of(context)
+                                .size
+                                .height * 0.06,
+                          ),
+                        ),
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text("${userRep.user.email}", style: _biggerFont),
+                              RaisedButton(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          18.0)),
+                                  color: Colors.teal,
+                                  onPressed: () {
+                                    userRep.addAvatar();
+                                  },
+                                  child: Center(child: Text("Change avatar",
+                                      style: TextStyle(color: Colors.white))))
+                            ],
+                          ),
+                        ),
+                      ]),
                   padding: EdgeInsets.all(2),
                   color: Colors.white,
                 ),
                 draggable: true,
                 heightBehavior: SnappingSheetHeight.fit()),
             snappingSheetController: _snapCtrl,
-            grabbing: Container(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Welcome back, ${userRep.user.email}!", style: _biggerFont),
-                  Icon(false ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up),
-                ],
+            grabbing: InkWell(
+              onTap: () {
+                setState(() {
+                  _snapCtrl.snapToPosition(_snapPosis[_snapCtrl.currentSnapPosition == _snapPosis[1] ? 0 : 1]);
+                });
+                },
+              child: Container(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Welcome back, ${userRep.user.email}!",
+                        style: _biggerFont),
+                    Icon(Icons.keyboard_arrow_up),
+                  ],
+                ),
+                color: Colors.grey,
+                padding: EdgeInsets.all(10),
               ),
-              color: Colors.grey,
-              padding: EdgeInsets.all(10),
+
             ),
             grabbingHeight: MediaQuery
                 .of(context)
                 .size
                 .height * 0.075,
             child: _list,
-            snapPositions: [
-              SnapPosition(
-                  positionPixel: 0.0,
-                  snappingCurve: Curves.elasticOut,
-                  snappingDuration: Duration(milliseconds: 750)),
-              SnapPosition(
-                  positionPixel: MediaQuery
-                      .of(context)
-                      .size
-                      .height * 0.14,
-                  snappingCurve: Curves.elasticOut,
-                  snappingDuration: Duration(milliseconds: 750)),
-            ],
-            initSnapPosition: SnapPosition(positionPixel: 0.0, snappingCurve: Curves.elasticOut, snappingDuration: Duration(milliseconds: 750)),
+            snapPositions: _snapPosis,
+            initSnapPosition: _snapPosis[0],
           )
               : _list;
         },
@@ -184,157 +207,192 @@ class _RandomWordsState extends State<RandomWords> {
     var _loginPage = MaterialPageRoute<void>(
       builder: ((BuildContext context) {
         return StatefulBuilder(
-          builder: (context, setState) => Consumer<UserRepository>(builder: (context, userRep, _) {
-            return Scaffold(
-              // resizeToAvoidBottomInset: false,
-              appBar: AppBar(
-                title: Text('Login'),
-              ),
-              body: Container(
-                alignment: Alignment.topCenter,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    SizedBox(height: 10),
-                    Text('Welcome to my homework! Please fill the fields below:', style: _biggerFont),
-                    SizedBox(height: 10),
-                    TextField(
-                      controller: _emailCtrl,
-                      style: _biggerFont,
-                      decoration: InputDecoration(
-                        hintText: 'Email',
-                        icon: Icon(Icons.mail),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    TextField(
-                      controller: _passwordCtrl,
-                      style: _biggerFont,
-                      decoration: InputDecoration(
-                        hintText: 'Password',
-                        icon: Icon(Icons.vpn_key),
-                      ),
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 10),
-                    Builder(
-                      builder: ((context) {
-                        switch (userRep.status) {
-                          case Status.Uninitialized:
-                          case Status.Unauthenticated:
-                            return RaisedButton(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                              color: Colors.red,
-                              onPressed: () async {
-                                try {
-                                  await userRep.signIn(_emailCtrl.text, _passwordCtrl.text);
-                                  await userRep.syncSavedFavorites(_saved);
-                                } on FirebaseAuthException catch (_) {
-                                  Scaffold.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text("There was an error logging into the app"),
-                                    ),
-                                  );
-                                }
-                              },
-                              child: Text(
-                                'Submit',
-                                style: TextStyle(color: Colors.white, fontSize: 18),
-                              ),
-                            );
-                          case Status.Authenticating:
-                            return Center(child: CircularProgressIndicator());
-                          default:
-                            Navigator.of(context).pop();
-                            return Column(children: [
-                              Center(child: Text("Already logged in! Please return to the main page")),
-                              RaisedButton(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                                color: Colors.red,
-                                onPressed: () {
-                                  userRep.signOut();
-                                  _saved.clear();
-                                  Scaffold.of(context).showSnackBar(SnackBar(content: Text("Logged out successfully")));
-                                },
-                                child: Text("sign out"),
-                              )
-                            ]);
-                        }
-                      }),
-                    ),
-                    Builder(
-                      builder: (context) => RaisedButton(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                          color: Colors.teal,
-                          onPressed: () {
-                            if (_passwordCtrl.text.isNotEmpty && _emailCtrl.text.isNotEmpty) {
-                              /** TODO: Add onTap actions to open/close the bottom sheet
-                               * TODO: Also try the bonus - blur the background based on the bottom sheet's height (use the controller)
-                               */
-                              showModalBottomSheet(
-                                  isScrollControlled: true,
-                                  context: context,
-                                  builder: (context) {
-                                    final _passConfirmCtrl = TextEditingController();
-                                    final _screenBottom = MediaQuery
-                                        .of(context)
-                                        .viewInsets
-                                        .bottom;
-                                    final _screenHeight = MediaQuery
-                                        .of(context)
-                                        .size
-                                        .height;
-                                    return Container(
-                                      height: _screenBottom + _screenHeight * 0.2,
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                        children: [
-                                          Text("Please confirm your password below:", style: _biggerFont),
-                                          TextField(
-                                            controller: _passConfirmCtrl,
-                                            autofocus: true,
-                                            style: _biggerFont,
-                                            decoration: InputDecoration(
-                                              hintText: 'Password',
-                                              icon: Icon(Icons.vpn_key_outlined),
-                                            ),
-                                            obscureText: true,
-                                          ),
-                                          RaisedButton(
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                                              color: Colors.teal,
-                                              onPressed: () async {
-                                                try { // TODO: add error text to TextField when passwords don't match
-                                                  if(_passConfirmCtrl.text.isNotEmpty && _passConfirmCtrl.text.compareTo(_passwordCtrl.text) == 0) {
-                                                    Navigator.of(context).pop(); //pops the modal bottom sheet;
-                                                    await userRep.signUp(_emailCtrl.text, _passwordCtrl.text, _passConfirmCtrl.text);
-                                                    await userRep.syncSavedFavorites(_saved);
-                                                  }
-                                                } on FirebaseAuthException catch (_) {
-                                                  Scaffold.of(context).showSnackBar(
-                                                    SnackBar(
-                                                      content: Text("There was an error logging into the app"),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                              child: Text("Confirm", style: TextStyle(color: Colors.white, fontSize: 18)))
-                                        ],
-                                      ),
-                                    );
-                                  });
+          builder: (context, setState) =>
+              Consumer<UserRepository>(builder: (context, userRep, _) {
+                return Scaffold(
+                  // resizeToAvoidBottomInset: false,
+                  appBar: AppBar(
+                    title: Text('Login'),
+                  ),
+                  body: Container(
+                    alignment: Alignment.topCenter,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        SizedBox(height: 10),
+                        Text(
+                            'Welcome to my homework! Please fill the fields below:',
+                            style: _biggerFont),
+                        SizedBox(height: 10),
+                        TextField(
+                          controller: _emailCtrl,
+                          style: _biggerFont,
+                          decoration: InputDecoration(
+                            hintText: 'Email',
+                            icon: Icon(Icons.mail),
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        TextField(
+                          controller: _passwordCtrl,
+                          style: _biggerFont,
+                          decoration: InputDecoration(
+                            hintText: 'Password',
+                            icon: Icon(Icons.vpn_key),
+                          ),
+                          obscureText: true,
+                        ),
+                        SizedBox(height: 10),
+                        Builder(
+                          builder: ((context) {
+                            switch (userRep.status) {
+                              case Status.Uninitialized:
+                              case Status.Unauthenticated:
+                                return RaisedButton(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          18.0)),
+                                  color: Colors.red,
+                                  onPressed: () async {
+                                    try {
+                                      await userRep.signIn(
+                                          _emailCtrl.text, _passwordCtrl.text);
+                                      await userRep.syncSavedFavorites(_saved);
+                                    } on FirebaseAuthException catch (_) {
+                                      Scaffold.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              "There was an error logging into the app"),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: Text(
+                                    'Submit',
+                                    style: TextStyle(
+                                        color: Colors.white, fontSize: 18),
+                                  ),
+                                );
+                              case Status.Authenticating:
+                                return Center(
+                                    child: CircularProgressIndicator());
+                              default:
+                                Navigator.of(context).pop();
+                                return Column(children: [
+                                  Center(child: Text(
+                                      "Already logged in! Please return to the main page")),
+                                  RaisedButton(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                            18.0)),
+                                    color: Colors.red,
+                                    onPressed: () {
+                                      userRep.signOut();
+                                      setState(() =>_saved.clear());
+                                      Scaffold.of(context).showSnackBar(
+                                          SnackBar(content: Text(
+                                              "Logged out successfully")));
+                                    },
+                                    child: Text("sign out"),
+                                  )
+                                ]);
                             }
-                          },
-                          child: Center(child: Text("New user? Click to sign up", style: TextStyle(color: Colors.white, fontSize: 18)))),
-                    )
-                  ],
-                ),
-              ),
-            );
-          }),
+                          }),
+                        ),
+                        Builder(
+                          builder: (context) =>
+                              RaisedButton(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          18.0)),
+                                  color: Colors.teal,
+                                  onPressed: () {
+                                    if (_passwordCtrl.text.isNotEmpty &&
+                                        _emailCtrl.text.isNotEmpty) {
+                                      // TODO try the bonus - blur the background based on the bottom sheet's height (use the controller)
+                                      showModalBottomSheet(
+                                          isScrollControlled: true,
+                                          context: context,
+                                          builder: (context) {
+                                            final _passConfirmCtrl = TextEditingController();
+                                            var _passwordValid = true;
+                                            return Padding(
+                                              padding: MediaQuery.of(context).viewInsets,
+                                              child: StatefulBuilder(
+                                                builder: (context, setState) => Container(
+                                                  // height: _screenBottom +
+                                                  //     _screenHeight * 0.2,
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment
+                                                        .start,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment
+                                                        .center,
+                                                    children: [
+                                                      Text(
+                                                          "Please confirm your password below:",
+                                                          style: _biggerFont),
+                                                      TextField(
+                                                        controller: _passConfirmCtrl,
+                                                        autofocus: true,
+                                                        style: _biggerFont,
+                                                        decoration: InputDecoration(
+                                                            hintText: 'Confirm password',
+                                                            icon: Icon(Icons
+                                                                .vpn_key_outlined),
+                                                            errorText: _passwordValid ? null : "Passwords must match",
+                                                        ),
+                                                        obscureText: true,
+                                                        onTap: () => setState(() => _passwordValid = true),
+                                                      ),
+                                                      RaisedButton(
+                                                          shape: RoundedRectangleBorder(
+                                                              borderRadius: BorderRadius
+                                                                  .circular(18.0)),
+                                                          color: Colors.teal,
+                                                          onPressed: () async {
+                                                            try {
+                                                              if (_passConfirmCtrl.text.isNotEmpty && _passConfirmCtrl.text.compareTo(_passwordCtrl.text) == 0) {
+                                                                await userRep.signUp(_emailCtrl.text, _passwordCtrl.text, _passConfirmCtrl.text);
+                                                                setState(() => _passwordValid = true);
+                                                                await userRep.syncSavedFavorites(_saved);
+                                                                Navigator.of(context).pop(); //pops the modal bottom sheet;
+                                                              } else {
+                                                                setState(() => _passwordValid = false);
+                                                              }
+                                                            } on FirebaseAuthException catch (_) {
+                                                              Scaffold.of(context).showSnackBar(
+                                                                SnackBar(
+                                                                  content: Text(
+                                                                      "There was an error logging into the app"),
+                                                                ),
+                                                              );
+                                                            }
+                                                          },
+                                                          child: Text("Confirm",
+                                                              style: TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 18)))
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          });
+                                    }
+                                  },
+                                  child: Center(child: Text(
+                                      "New user? Click to sign up",
+                                      style: TextStyle(
+                                          color: Colors.white, fontSize: 18)))),
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              }),
         );
       }),
     );
@@ -343,50 +401,57 @@ class _RandomWordsState extends State<RandomWords> {
   }
 
   void _pushSaved() {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (BuildContext context) {
-      return Consumer<UserRepository>(
-        builder: (context, userRep, _) => FutureBuilder(
-            future: (() async {
-              return userRep.status == Status.Authenticated
-                  ? await userRep.firestore
-                      .collection('users')
-                      .doc(userRep.user.email)
-                      .get()
-                      .then((ref) => ref.data()['favorites'].map<WordPair>((s) => _stringToWordPair(s)))
-                  : _saved;
-            })(),
-            builder: (context, snapshot) => Scaffold(
-                  appBar: AppBar(
-                    title: Text('Saved Suggestions'),
-                  ),
-                  body: snapshot.hasData
-                      ? ListView(
-                          children: ListTile.divideTiles(
-                            context: context,
-                            tiles: snapshot.data
-                                .toList()
-                                .map<Widget>((WordPair pair) => ListTile(
-                                      title: Text(
-                                        pair.asPascalCase,
-                                        style: _biggerFont,
-                                      ),
-                                      trailing: IconButton(
-                                          icon: Icon(
-                                            Icons.delete,
-                                            color: Colors.black,
-                                          ),
-                                          onPressed: () async {
-                                            await userRep.removeFavorite(pair, _saved);
-                                            setState(() {});
-                                          }),
-                                    ))
-                                .toList(),
-                          ).toList(),
-                        )
-                      : Center(child: CircularProgressIndicator()),
-                )),
-      );
-    }));
+    Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (BuildContext context) {
+          return Consumer<UserRepository>(
+            builder: (context, userRep, _) =>
+                FutureBuilder(
+                    future: (() async {
+                      return userRep.status == Status.Authenticated
+                          ? await userRep.firestore
+                          .collection('users')
+                          .doc(userRep.user.email)
+                          .get()
+                          .then((ref) =>
+                          ref.data()['favorites'].map<WordPair>((s) =>
+                              _stringToWordPair(s)))
+                          : _saved;
+                    })(),
+                    builder: (context, snapshot) =>
+                        Scaffold(
+                          appBar: AppBar(
+                            title: Text('Saved Suggestions'),
+                          ),
+                          body: snapshot.hasData
+                              ? ListView(
+                            children: ListTile.divideTiles(
+                              context: context,
+                              tiles: snapshot.data
+                                  .toList()
+                                  .map<Widget>((WordPair pair) =>
+                                  ListTile(
+                                    title: Text(
+                                      pair.asPascalCase,
+                                      style: _biggerFont,
+                                    ),
+                                    trailing: IconButton(
+                                        icon: Icon(
+                                          Icons.delete,
+                                          color: Colors.black,
+                                        ),
+                                        onPressed: () async {
+                                          await userRep.removeFavorite(
+                                              pair, _saved);
+                                          setState(() {});
+                                        }),
+                                  ))
+                                  .toList(),
+                            ).toList(),
+                          )
+                              : Center(child: CircularProgressIndicator()),
+                        )),
+          );
+        }));
   }
 
   Widget _buildSuggestions() {
@@ -417,9 +482,9 @@ class _RandomWordsState extends State<RandomWords> {
           trailing: alreadySaved
               ? Icon(Icons.favorite, color: Colors.red)
               : Icon(
-                  Icons.favorite_border,
-                  color: null,
-                ),
+            Icons.favorite_border,
+            color: null,
+          ),
           onTap: () async {
             if (alreadySaved) {
               await userRep.removeFavorite(pair, _saved);
